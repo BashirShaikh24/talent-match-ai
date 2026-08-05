@@ -1,0 +1,98 @@
+@if (jobDescription) {
+  <div class="details-content__header">
+    <div class="details-content__header__avatar details-content__header__avatar--file">JD</div>
+
+    <div class="details-content__header__info">
+      <h2 class="details-content__header__info__name">{{ jobDescription.title }}</h2>
+
+      @if (jobDescription.filename) {
+        <a
+          class="details-content__header__info__file"
+          (click)="downloadResume(jobDescription.filename)"
+          >{{ talentMatchService.removeTimestampFromFilename(jobDescription.filename) }}</a
+        >
+      }
+
+      <div class="details-content__header__info__experience">
+        <i class="fa-solid fa-calendar-days"></i>
+        <span
+          >{{ jobDescription.min_years_experience }} –
+          {{ jobDescription.max_years_experience }} Years Experience</span
+        >
+      </div>
+    </div>
+  </div>
+
+  <hr class="details-content__divider" />
+
+  <section class="details-content__section">
+    <h3 class="details-content__section__title">Summary</h3>
+    <p class="details-content__section__summary">{{ jobDescription.summary }}</p>
+  </section>
+
+  <hr class="details-content__divider details-content__divider--dashed" />
+
+  @if (jobDescription.required_skills) {
+    <section class="details-content__section">
+      <h3 class="details-content__section__title">
+        Required Skills
+        <span class="details-content__section__title__count">{{
+          jobDescription.required_skills.length
+        }}</span>
+      </h3>
+      <div class="details-content__skills">
+        @for (skill of jobDescription.required_skills; track skill) {
+          <span class="details-content__skills__chip">{{ skill }}</span>
+        }
+      </div>
+    </section>
+
+    <hr class="details-content__divider details-content__divider--dashed" />
+  }
+
+  @if (jobDescription.nice_to_have_skills) {
+    <section class="details-content__section">
+      <h3 class="details-content__section__title">
+        Nice to Have
+        <span class="details-content__section__title__count">{{
+          jobDescription.nice_to_have_skills.length
+        }}</span>
+      </h3>
+      <div class="details-content__skills">
+        @for (skill of jobDescription.nice_to_have_skills; track skill) {
+          <span class="details-content__skills__chip details-content__skills__chip--muted">{{
+            skill
+          }}</span>
+        }
+      </div>
+    </section>
+
+    <hr class="details-content__divider details-content__divider--dashed" />
+  }
+
+  @if (jobDescription.responsibilities) {
+    <section class="details-content__section">
+      <h3 class="details-content__section__title">
+        Responsibilities
+        <span class="details-content__section__title__count">{{
+          jobDescription.responsibilities.length
+        }}</span>
+      </h3>
+      <ul class="details-content__responsibilities">
+        @for (item of jobDescription.responsibilities; track item) {
+          <li>
+            <i class="fa-solid fa-check"></i>
+            <span>{{ item }}</span>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+  <hr class="details-content__divider" />
+
+  <div class="details-content__actions">
+    <button class="details-content__actions__view-btn" (click)="closeDetailsModal()">
+      <i class="fa-solid fa-times"></i> Close
+    </button>
+  </div>
+}

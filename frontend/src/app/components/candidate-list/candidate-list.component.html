@@ -1,0 +1,172 @@
+<div class="candidate-list">
+  <div class="candidate-list__header">
+    <h2>Candidates</h2>
+    @if (candidates.length) {
+      <span class="candidate-list__header__count">{{ candidates.length }} resumes uploaded</span>
+    }
+  </div>
+
+  <div class="candidate-list__wrapper">
+    @for (c of candidates; track $index) {
+      <article class="candidate-list__wrapper__card">
+        @if (!c.isMatching) {
+          <div class="candidate-list__wrapper__card__inner">
+            <div class="candidate-list__wrapper__card__body">
+              <div class="candidate-list__wrapper__card__body__heading">
+                <h3 class="candidate-list__wrapper__card__body__name">{{ c.name }}</h3>
+                <p class="candidate-list__wrapper__card__body__role">{{ c.role }}</p>
+              </div>
+
+              <p class="candidate-list__wrapper__card__body__summary">{{ c.summary }}</p>
+
+              <div class="candidate-list__wrapper__card__body__skill-list">
+                @for (skill of c.skills | slice: 0 : 7; track skill) {
+                  <span class="candidate-list__wrapper__card__body__skill-list__chip">{{
+                    skill
+                  }}</span>
+                }
+              </div>
+            </div>
+            <div class="candidate-list__wrapper__card__score-wrapper">
+              @if (c.match_percentage) {
+                <span
+                  class="candidate-list__wrapper__card__score-wrapper__score-tag"
+                  [style.color]="scoreColor(c.match_percentage)"
+                >
+                  {{ scoreLabel(c.match_percentage) }}
+                </span>
+
+                <div
+                  class="candidate-list__wrapper__card__score-wrapper__score-ring"
+                  [style.background]="ringStyle(c.match_percentage).background"
+                >
+                  <div class="candidate-list__wrapper__card__score-wrapper__score-ring-inner">
+                    <span class="candidate-list__wrapper__card__score-wrapper__score-value">{{
+                      c.match_percentage
+                    }}</span>
+                    <span class="candidate-list__wrapper__card__score-wrapper__score-unit">%</span>
+                  </div>
+                </div>
+              }
+            </div>
+            <div class="candidate-list__wrapper__card__other-details">
+              <div class="candidate-list__wrapper__card__other-details__contact">
+                @if (c.email) {
+                  <div class="candidate-list__wrapper__card__other-details__contact__item">
+                    <div
+                      class="candidate-list__wrapper__card__other-details__contact__item__icon candidate-list__wrapper__card__other-details__contact__item__icon--purple"
+                    >
+                      <i class="fa-solid fa-envelope"></i>
+                    </div>
+                    <div class="candidate-list__wrapper__card__other-details__contact__item__text">
+                      <span
+                        class="candidate-list__wrapper__card__other-details__contact__item__text__label"
+                        >Email</span
+                      >
+                      <span
+                        class="candidate-list__wrapper__card__other-details__contact__item__text__value"
+                        >{{ c.email }}</span
+                      >
+                    </div>
+                  </div>
+                  <span
+                    class="candidate-list__wrapper__card__other-details__contact__item__divider"
+                  ></span>
+                }
+                @if (c.contact_no) {
+                  <div class="candidate-list__wrapper__card__other-details__contact__item">
+                    <div
+                      class="candidate-list__wrapper__card__other-details__contact__item__icon candidate-list__wrapper__card__other-details__contact__item__icon--green"
+                    >
+                      <i class="fa-solid fa-phone"></i>
+                    </div>
+                    <div class="candidate-list__wrapper__card__other-details__contact__item__text">
+                      <span
+                        class="candidate-list__wrapper__card__other-details__contact__item__text__label"
+                        >Contact No</span
+                      >
+                      <span
+                        class="candidate-list__wrapper__card__other-details__contact__item__text__value"
+                        >{{ c.contact_no }}</span
+                      >
+                    </div>
+                  </div>
+                  <span
+                    class="candidate-list__wrapper__card__other-details__contact__item__divider"
+                  ></span>
+                }
+                @if (c.years_of_experience) {
+                  <div class="candidate-list__wrapper__card__other-details__contact__item">
+                    <div class="candidate-list__wrapper__card__other-details__contact__item__icon">
+                      <i class="fa-solid fa-briefcase"></i>
+                    </div>
+                    <div class="candidate-list__wrapper__card__other-details__contact__item__text">
+                      <span
+                        class="candidate-list__wrapper__card__other-details__contact__item__text__label"
+                        >Experience</span
+                      >
+                      <span
+                        class="candidate-list__wrapper__card__other-details__contact__item__text__value"
+                        >{{ c.years_of_experience }} Years
+                      </span>
+                    </div>
+                  </div>
+                  <span
+                    class="candidate-list__wrapper__card__other-details__contact__item__divider"
+                  ></span>
+                }
+                @if (c.location) {
+                  <div class="candidate-list__wrapper__card__other-details__contact__item">
+                    <div
+                      class="candidate-list__wrapper__card__other-details__contact__item__icon candidate-list__wrapper__card__other-details__contact__item__icon--pink"
+                    >
+                      <i class="fa-solid fa-location-dot"></i>
+                    </div>
+                    <div class="candidate-list__wrapper__card__other-details__contact__item__text">
+                      <span
+                        class="candidate-list__wrapper__card__other-details__contact__item__text__label"
+                        >Location</span
+                      >
+                      <span
+                        class="candidate-list__wrapper__card__other-details__contact__item__text__value"
+                        >{{ c.location }}</span
+                      >
+                    </div>
+                  </div>
+                }
+              </div>
+              <div class="candidate-list__wrapper__card__other-details__download">
+                <i class="fa-regular fa-eye" (click)="openDetails(c)"></i>
+                @if (c.filename) {
+                  <i class="fa-solid fa-download" (click)="downloadResume(c.filename)"></i>
+                }
+              </div>
+            </div>
+          </div>
+        } @else {
+          <app-skeleton-placeholder></app-skeleton-placeholder>
+        }
+      </article>
+    }
+
+    @if (!candidates.length) {
+      <div class="candidate-list__empty-state">
+        <p>No candidates yet — upload a resume to see match results here.</p>
+      </div>
+    }
+  </div>
+  <div class="candidate-list__match-candidate">
+    <button
+      class="candidate-list__match-candidate__btn"
+      [disabled]="candidates.length == 0 || !isJdUploaded || isMatching"
+      (click)="fetchCandidateMatchScores()"
+    >
+      <i class="fa-solid fa-chart-line"></i>
+      @if (!isMatching) {
+        Evaluate Fit
+      } @else {
+        Evaluating Fit...
+      }
+    </button>
+  </div>
+</div>

@@ -1,0 +1,29 @@
+.talent-match-ai {
+  height: 100%;
+
+  &__container {
+    padding: 12px 16px;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 16px;
+    height: calc(100% - 66px);
+
+    &__wrapper {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 18px;
+    }
+
+    &__job-description,
+    &__resume-upload {
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    &__candidate-list {
+      height: 100%;
+      overflow: hidden;
+    }
+  }
+}

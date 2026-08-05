@@ -1,0 +1,151 @@
+@if (candidate) {
+  <div class="details-content__header">
+    <div class="details-content__header__info">
+      <h2 class="details-content__header__info__name">{{ candidate.name }}</h2>
+      <p class="details-content__header__info__role">{{ candidate.role }}</p>
+
+      <div class="details-content__header__info__file">
+        <div class="details-content__header__info__file__icon">
+          <i class="fa-solid fa-file-pdf"></i>
+        </div>
+        @if (candidate.filename) {
+          <a
+            class="details-content__header__info__file__name"
+            (click)="downloadResume(candidate.filename)"
+            >{{ talentMatchService.removeTimestampFromFilename(candidate.filename) }}</a
+          >
+        }
+      </div>
+    </div>
+
+    @if (candidate.match_percentage) {
+      <div class="details-content__header__score-wrapper">
+        <span
+          class="details-content__header__score-wrapper__score-tag"
+          [style.color]="scoreColor(candidate.match_percentage)"
+        >
+          {{ scoreLabel(candidate.match_percentage) }}
+        </span>
+
+        <div
+          class="details-content__header__score-wrapper__score-ring"
+          [style.background]="ringStyle(candidate.match_percentage).background"
+        >
+          <div class="details-content__header__score-wrapper__score-ring-inner">
+            <span class="details-content__header__score-wrapper__score-value">{{
+              candidate.match_percentage
+            }}</span>
+            <span class="details-content__header__score-wrapper__score-unit">%</span>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <hr class="details-content__divider" />
+
+  <div class="details-content__meta">
+    @if (candidate.email) {
+      <div class="details-content__meta__item">
+        <div class="details-content__meta__item__icon details-content__meta__item__icon--purple">
+          <i class="fa-solid fa-envelope"></i>
+        </div>
+        <div>
+          <span class="details-content__meta__item__label">Email</span>
+          <span class="details-content__meta__item__value">{{ candidate.email }}</span>
+        </div>
+      </div>
+    }
+    @if (candidate.contact_no) {
+      <div class="details-content__meta__item">
+        <div class="details-content__meta__item__icon details-content__meta__item__icon--green">
+          <i class="fa-solid fa-phone"></i>
+        </div>
+        <div>
+          <span class="details-content__meta__item__label">Contact No.</span>
+          <span class="details-content__meta__item__value">{{ candidate.contact_no }}</span>
+        </div>
+      </div>
+    }
+
+    @if (candidate.years_of_experience != null) {
+      <div class="details-content__meta__item">
+        <div class="details-content__meta__item__icon details-content__meta__item__icon--blue">
+          <i class="fa-solid fa-briefcase"></i>
+        </div>
+        <div>
+          <span class="details-content__meta__item__label">Experience</span>
+          <span class="details-content__meta__item__value"
+            >{{ candidate.years_of_experience }} Years</span
+          >
+        </div>
+      </div>
+    }
+
+    @if (candidate.location) {
+      <div class="details-content__meta__item">
+        <div class="details-content__meta__item__icon details-content__meta__item__icon--pink">
+          <i class="fa-solid fa-location-dot"></i>
+        </div>
+        <div>
+          <span class="details-content__meta__item__label">Location</span>
+          <span class="details-content__meta__item__value">{{ candidate.location }}</span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <hr class="details-content__divider" />
+
+  <section class="details-content__section">
+    <h3 class="details-content__section__title">Summary</h3>
+    <p class="details-content__section__summary">{{ candidate.summary }}</p>
+  </section>
+
+  <hr class="details-content__divider details-content__divider--dashed" />
+
+  <section class="details-content__section">
+    <h3 class="details-content__section__title">
+      Skills
+      <span class="details-content__section__title__count">{{ candidate.skills?.length }}</span>
+    </h3>
+    <div class="details-content__skills">
+      @for (skill of candidate.skills; track skill) {
+        <span class="details-content__skills__chip">{{ skill }}</span>
+      }
+    </div>
+  </section>
+
+  <hr class="details-content__divider details-content__divider--dashed" />
+
+  <section class="details-content__section">
+    <h3 class="details-content__section__title">
+      Key Responsibilities
+      <span class="details-content__section__title__count">{{
+        candidate.responsibilities?.length
+      }}</span>
+    </h3>
+    <ul class="details-content__responsibilities">
+      @for (item of candidate.responsibilities; track item) {
+        <li>
+          <i class="fa-solid fa-check"></i> <span>{{ item }}</span>
+        </li>
+      }
+    </ul>
+  </section>
+
+  <hr class="details-content__divider" />
+
+  <div class="details-content__actions">
+    <button class="details-content__actions__view-btn" (click)="closeDetailsModal()">
+      <i class="fa-solid fa-times"></i> Close
+    </button>
+    <button
+      class="details-content__actions__evaluate-btn"
+      [disabled]="candidate.match_percentage != null || isMatching || !uploadedJdResult"
+      (click)="evaluateFit()"
+    >
+      <i class="fa-solid fa-chart-line"></i> Evaluate Fit
+    </button>
+  </div>
+}

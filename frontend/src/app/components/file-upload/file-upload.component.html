@@ -1,0 +1,82 @@
+@if (!uploadedFileDetails) {
+  <div class="file-upload">
+    <div
+      class="file-upload__wrapper"
+      [class.dragging]="isDragging"
+      [class.has-file]="selectedFile"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+      (drop)="onDrop($event)"
+    >
+      @if (!selectedFile) {
+        <svg
+          class="file-upload__wrapper__icon"
+          width="36"
+          height="36"
+          viewBox="0 0 24 24"
+          fill="none"
+        >
+          <path
+            d="M12 15V3m0 0L7 8m5-5l5 5"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <p class="file-upload__wrapper__title">Drag &amp; drop a file here</p>
+        <p class="file-upload__wrapper__sub">PDF only</p>
+        <label class="file-upload__wrapper__browse-btn">
+          Browse file
+          <input type="file" accept="application/pdf" (change)="onFileSelected($event)" hidden />
+        </label>
+      }
+
+      @if (selectedFile) {
+        <div class="file-upload__wrapper__file-chip">
+          <i class="fa-regular fa-file"></i>
+          <div class="file-upload__wrapper__file-chip__file-meta">
+            <span class="file-upload__wrapper__file-chip__file-meta__file-name">{{
+              selectedFile.name
+            }}</span>
+            <span class="file-upload__wrapper__file-chip__file-meta__file-size">{{
+              formatSize(selectedFile.size)
+            }}</span>
+          </div>
+          <button
+            class="file-upload__wrapper__file-chip__remove-btn"
+            (click)="clearFile()"
+            aria-label="Remove file"
+          >
+            ✕
+          </button>
+        </div>
+      }
+    </div>
+
+    @if (selectedFile) {
+      <button class="file-upload__analyze-btn" [disabled]="isUploading" (click)="onUpload()">
+        {{ isUploading ? 'Uploading…' : 'Upload' }}
+      </button>
+    }
+  </div>
+} @else {
+  @if (uploadTypeEnum.JD === uploadType) {
+    <app-uploaded-jd-details
+      [uploadedFileDetails]="uploadedFileDetails"
+      (replaceUploadedFile)="clearFile()"
+    ></app-uploaded-jd-details>
+  } @else {
+    <app-uploaded-cd-details
+      [uploadedFileDetails]="uploadedFileDetails"
+      (replaceUploadedFile)="clearFile()"
+    ></app-uploaded-cd-details>
+  }
+}

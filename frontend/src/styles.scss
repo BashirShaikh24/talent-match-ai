@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap');
+
+:root {
+  /* Color */
+  --ink: #12131a;
+  --paper: #f6f7fb;
+  --surface: #ffffff;
+  --indigo: #6297e8;
+  --indigo-dim: #eef1ff;
+  --mint: #12b76a;
+  --mint-dim: #e6f4e5;
+  --amber: #f79009;
+  --coral: #f04438;
+  --coral-dim: #feefee;
+  --slate: #6b7280;
+  --slate-light: #98a2b3;
+  --border: #e4e7ec;
+  --light-gray: #d2d2d2;
+  --light-blue: #b9c5ff;
+  --lighter-gray: #3a3d47;
+  --purple: #7c3aed;
+  --mint-purple: #f1edff;
+  --pink: #a759a7;
+  --pink-dim: #f9edf9;
+
+  /* Type */
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Radius / shadow */
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --shadow-card: 1px 1px 4px 2px var(--indigo-dim); //#ebebeb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+app-root {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+body,
+html {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+
+  h2 {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+
+  button:disabled {
+    background: var(--slate-light);
+    cursor: not-allowed;
+  }
+}

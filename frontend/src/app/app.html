@@ -1,0 +1,56 @@
+<div class="talent-match-ai">
+  <app-header></app-header>
+  <div class="talent-match-ai__container">
+    <div class="talent-match-ai__container__wrapper">
+      <div class="talent-match-ai__container__job-description">
+        <h2>Upload Job Description</h2>
+        <app-file-upload
+          (uploadProcessed)="onFileProcessed($event.uploadedResult, uploadTypeEnum.JD)"
+          [uploadType]="uploadTypeEnum.JD"
+        >
+        </app-file-upload>
+      </div>
+      <div class="talent-match-ai__container__resume-upload">
+        <h2>Upload Candidate Resume</h2>
+        <app-file-upload
+          (uploadProcessed)="onFileProcessed($event.uploadedResult, uploadTypeEnum.CD)"
+          [uploadType]="uploadTypeEnum.CD"
+        >
+        </app-file-upload>
+      </div>
+    </div>
+    <div class="talent-match-ai__container__candidate-list">
+      <app-candidate-list
+        [candidates]="candidates"
+        [isJdUploaded]="!!uploadedJdResult"
+        [isMatching]="isMatching"
+        (getCandidateMatchScores)="fetchCandidateMatchScores($event)"
+      ></app-candidate-list>
+    </div>
+  </div>
+</div>
+
+@if (
+  talentMatchService.isModalOpen().state &&
+  talentMatchService.isModalOpen().uploadedType === uploadTypeEnum.CD &&
+  talentMatchService.isModalOpen().uploadedType
+) {
+  <app-details-modal>
+    <app-cd-details
+      [candidate]="talentMatchService.isModalOpen().selectedData"
+      [uploadedJdResult]="uploadedJdResult"
+    ></app-cd-details>
+  </app-details-modal>
+}
+
+@if (
+  talentMatchService.isModalOpen().state &&
+  talentMatchService.isModalOpen().uploadedType === uploadTypeEnum.JD &&
+  talentMatchService.isModalOpen().uploadedType
+) {
+  <app-details-modal>
+    <app-jd-details
+      [jobDescription]="talentMatchService.isModalOpen().selectedData"
+    ></app-jd-details>
+  </app-details-modal>
+}

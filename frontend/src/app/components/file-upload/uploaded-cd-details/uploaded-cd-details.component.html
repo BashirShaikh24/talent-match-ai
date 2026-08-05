@@ -1,0 +1,84 @@
+<div class="uploaded-cd-details">
+  <div class="uploaded-cd-details__wrapper">
+    @if (uploadedFileDetails) {
+      <div class="uploaded-cd-details__header">
+        <div class="uploaded-cd-details__header__avatar">
+          <i class="fa-solid fa-user"></i>
+        </div>
+
+        <div class="uploaded-cd-details__header__info">
+          <h3 class="uploaded-cd-details__header__info__name">{{ uploadedFileDetails.name }}</h3>
+          <p class="uploaded-cd-details__header__info__role">{{ uploadedFileDetails.role }}</p>
+        </div>
+      </div>
+
+      <hr class="uploaded-cd-details__divider" />
+
+      <div class="uploaded-cd-details__contact">
+        @if (uploadedFileDetails.years_of_experience) {
+          <div class="uploaded-cd-details__contact__item">
+            <div class="uploaded-cd-details__contact__item__icon">
+              <i class="fa-solid fa-briefcase"></i>
+            </div>
+            <div class="uploaded-cd-details__contact__item__text">
+              <span class="uploaded-cd-details__contact__item__text__label">Experience</span>
+              <span class="uploaded-cd-details__contact__item__text__value"
+                >{{ uploadedFileDetails.years_of_experience }} Years
+              </span>
+            </div>
+          </div>
+        }
+
+        @if (uploadedFileDetails.location) {
+          <div class="uploaded-cd-details__contact__item">
+            <div
+              class="uploaded-cd-details__contact__item__icon uploaded-cd-details__contact__item__icon--purple"
+            >
+              <i class="fa-solid fa-location-dot"></i>
+            </div>
+            <div class="uploaded-cd-details__contact__item__text">
+              <span class="uploaded-cd-details__contact__item__text__label">Location</span>
+              <span class="uploaded-cd-details__contact__item__text__value">{{
+                uploadedFileDetails.location
+              }}</span>
+            </div>
+          </div>
+        }
+      </div>
+
+      <hr class="uploaded-cd-details__divider uploaded-cd-details__divider--dashed" />
+
+      @if (uploadedFileDetails.skills) {
+        <div class="uploaded-cd-details__skills">
+          <h4 class="uploaded-cd-details__skills__title">Top Skills</h4>
+          <div class="uploaded-cd-details__skills__list">
+            @for (skill of uploadedFileDetails.skills | slice: 0 : 2; track skill) {
+              <span class="uploaded-cd-details__skills__list__chip">{{ skill }}</span>
+            }
+            @if (uploadedFileDetails.skills.length > 2) {
+              <span
+                class="uploaded-cd-details__skills__list__chip uploaded-cd-details__skills__list__chip--more"
+              >
+                + {{ uploadedFileDetails.skills.length - 2 }} more
+              </span>
+            }
+          </div>
+        </div>
+      }
+
+      <hr class="uploaded-cd-details__divider" />
+
+      <div class="uploaded-cd-details__actions">
+        <button
+          class="uploaded-cd-details__actions__view-btn"
+          (click)="openDetails(uploadedFileDetails)"
+        >
+          <i class="fa-regular fa-eye"></i> View Resume
+        </button>
+        <button class="uploaded-cd-details__actions__replace-btn" (click)="replaceFile()">
+          <i class="fa-solid fa-chart-line"></i> Replace CV
+        </button>
+      </div>
+    }
+  </div>
+</div>

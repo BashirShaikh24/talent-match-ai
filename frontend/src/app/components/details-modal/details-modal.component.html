@@ -1,0 +1,11 @@
+<div class="modal-backdrop" (click)="onBackdropClick($event)">
+  <div class="modal-shell" role="dialog" aria-modal="true">
+    <button class="modal-shell__close" (click)="onClose()" aria-label="Close">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+
+    <div class="modal-shell__scroll">
+      <ng-content></ng-content>
+    </div>
+  </div>
+</div>

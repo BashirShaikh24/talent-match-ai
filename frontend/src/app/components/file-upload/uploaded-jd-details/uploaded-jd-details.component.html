@@ -1,0 +1,100 @@
+<div class="uploaded-jd-details">
+  <div class="uploaded-jd-details__wrapper">
+    @if (uploadedFileDetails) {
+      <div class="uploaded-jd-details__header">
+        <div class="uploaded-jd-details__header__icon">JD</div>
+
+        <div class="uploaded-jd-details__header__info">
+          <h3 class="uploaded-jd-details__header__info__title">{{ uploadedFileDetails.title }}</h3>
+          <div class="uploaded-jd-details__header__info__meta">
+            <i class="fa-solid fa-calendar-days"></i>
+            <span
+              >{{ uploadedFileDetails.min_years_experience }} –
+              {{ uploadedFileDetails.max_years_experience }} Years Experience</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <hr class="uploaded-jd-details__divider" />
+
+      <div class="uploaded-jd-details__stats">
+        @if (uploadedFileDetails.required_skills) {
+          <div class="uploaded-jd-details__stats__item">
+            <div
+              class="uploaded-jd-details__stats__item__icon uploaded-jd-details__stats__item__icon--blue"
+            >
+              <i class="fa-solid fa-code"></i>
+            </div>
+            <span
+              class="uploaded-jd-details__stats__item__value uploaded-jd-details__stats__item__value--blue"
+            >
+              {{ uploadedFileDetails.required_skills.length }}
+            </span>
+            <span class="uploaded-jd-details__stats__item__label">Required Skills</span>
+          </div>
+
+          <div class="uploaded-jd-details__stats__item">
+            <div
+              class="uploaded-jd-details__stats__item__icon uploaded-jd-details__stats__item__icon--blue"
+            >
+              <i class="fa-solid fa-code"></i>
+            </div>
+            <span
+              class="uploaded-jd-details__stats__item__value uploaded-jd-details__stats__item__value--blue"
+            >
+              {{ uploadedFileDetails.required_skills.length }}
+            </span>
+            <span class="uploaded-jd-details__stats__item__label">Required Skills</span>
+          </div>
+        }
+        @if (uploadedFileDetails.nice_to_have_skills) {
+          <span class="uploaded-jd-details__stats__divider"></span>
+          <div class="uploaded-jd-details__stats__item">
+            <div
+              class="uploaded-jd-details__stats__item__icon uploaded-jd-details__stats__item__icon--green"
+            >
+              <i class="fa-solid fa-star"></i>
+            </div>
+            <span
+              class="uploaded-jd-details__stats__item__value uploaded-jd-details__stats__item__value--green"
+            >
+              {{ uploadedFileDetails.nice_to_have_skills.length }}
+            </span>
+            <span class="uploaded-jd-details__stats__item__label">Nice to Have</span>
+          </div>
+        }
+        @if (uploadedFileDetails.responsibilities) {
+          <span class="uploaded-jd-details__stats__divider"></span>
+          <div class="uploaded-jd-details__stats__item">
+            <div
+              class="uploaded-jd-details__stats__item__icon uploaded-jd-details__stats__item__icon--purple"
+            >
+              <i class="fa-solid fa-clipboard-list"></i>
+            </div>
+            <span
+              class="uploaded-jd-details__stats__item__value uploaded-jd-details__stats__item__value--purple"
+            >
+              {{ uploadedFileDetails.responsibilities.length }}
+            </span>
+            <span class="uploaded-jd-details__stats__item__label">Responsibilities</span>
+          </div>
+        }
+      </div>
+
+      <hr class="uploaded-jd-details__divider" />
+
+      <div class="uploaded-jd-details__actions">
+        <button
+          class="uploaded-jd-details__actions__view-btn"
+          (click)="openDetails(uploadedFileDetails)"
+        >
+          <i class="fa-regular fa-eye"></i> View Details
+        </button>
+        <button class="uploaded-jd-details__actions__replace-btn" (click)="replaceFile()">
+          <i class="fa-solid fa-chart-line"></i> Replace JD
+        </button>
+      </div>
+    }
+  </div>
+</div>
