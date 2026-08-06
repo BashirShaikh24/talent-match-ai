@@ -5,6 +5,7 @@ import {
   EventEmitter,
   Input,
   Output,
+  ViewEncapsulation,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs/operators';
@@ -20,6 +21,7 @@ import { TalentMatchService } from '../../services';
   styleUrl: './file-upload.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [UploadedJdDetailsComponent, UploadedCdDetailsComponent],
+  encapsulation: ViewEncapsulation.None,
 })
 export class FileUploadComponent {
   @Input({ required: true }) uploadType!: UploadType;

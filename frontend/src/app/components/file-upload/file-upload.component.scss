@@ -142,3 +142,21 @@
     background: var(--indigo);
   }
 }
+
+@media (max-width: 768px) {
+  .file-upload {
+    padding: 10px;
+
+    &__wrapper {
+      padding: 12px;
+    }
+
+    &__wrapper__file-chip {
+      flex-direction: column;
+
+      &__file-meta {
+        width: 100%;
+      }
+    }
+  }
+}

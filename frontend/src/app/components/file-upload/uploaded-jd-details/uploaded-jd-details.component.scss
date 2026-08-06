@@ -185,3 +185,17 @@
     }
   }
 }
+
+@media (max-width: 768px) {
+  .uploaded-jd-details {
+    width: 100%;
+
+    &__header {
+      &__info {
+        &__title {
+          width: 250px;
+        }
+      }
+    }
+  }
+}

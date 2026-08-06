@@ -280,3 +280,79 @@ app-candidate-list {
     box-shadow: var(--shadow-card);
   }
 }
+
+@media (max-width: 768px) {
+  app-candidate-list {
+    height: auto;
+    display: block;
+  }
+
+  .candidate-list {
+    height: auto;
+    min-height: 0;
+
+    &__header {
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    &__wrapper {
+      height: auto;
+      max-height: min(60vh, 420px);
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 8px;
+    }
+
+    &__wrapper__card {
+      padding: 12px;
+
+      &__inner {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      &__body__heading {
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      &__score-wrapper {
+        max-width: none;
+        gap: 6px;
+        border-top: 1px solid var(--border);
+        padding-top: 12px;
+      }
+
+      &__other-details {
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 10px;
+        padding-top: 12px;
+      }
+
+      &__other-details__contact {
+        flex-wrap: wrap;
+        gap: 8px;
+        width: 100%;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 12px;
+
+        &__item {
+          width: 100%;
+        }
+      }
+    }
+
+    &__match-candidate {
+      height: auto;
+      padding: 12px;
+      text-align: left;
+    }
+
+    &__match-candidate__btn {
+      width: 100%;
+    }
+  }
+}

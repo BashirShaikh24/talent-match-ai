@@ -27,3 +27,35 @@
     }
   }
 }
+
+@media (max-width: 768px) {
+  .talent-match-ai {
+    height: auto;
+    overflow: hidden;
+
+    &__container {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto;
+      height: auto;
+      min-height: 0;
+      padding: 12px;
+      gap: 12px;
+    }
+
+    &__container__wrapper {
+      grid-template-rows: repeat(2, auto);
+      gap: 12px;
+    }
+
+    &__container__job-description,
+    &__container__resume-upload {
+      height: auto;
+    }
+
+    &__container__candidate-list {
+      height: auto;
+      min-height: 0;
+      overflow: hidden;
+    }
+  }
+}

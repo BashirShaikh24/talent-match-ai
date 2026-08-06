@@ -27,8 +27,8 @@
                 }
               </div>
             </div>
-            <div class="candidate-list__wrapper__card__score-wrapper">
-              @if (c.match_percentage != null) {
+            @if (c.match_percentage != null) {
+              <div class="candidate-list__wrapper__card__score-wrapper">
                 <span
                   class="candidate-list__wrapper__card__score-wrapper__score-tag"
                   [style.color]="scoreColor(c.match_percentage)"
@@ -47,8 +47,9 @@
                     <span class="candidate-list__wrapper__card__score-wrapper__score-unit">%</span>
                   </div>
                 </div>
-              }
-            </div>
+              </div>
+            }
+
             <div class="candidate-list__wrapper__card__other-details">
               <div class="candidate-list__wrapper__card__other-details__contact">
                 @if (c.email) {

@@ -34,6 +34,9 @@
         font-weight: 700;
         margin: 0;
         color: var(--ink);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       &__role {
@@ -321,6 +324,46 @@
       background: var(--amber);
       color: var(--surface);
       border: none;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .details-content {
+    &__header {
+      gap: 12px;
+      padding-right: 0;
+
+      &__info {
+        &__name {
+          width: 240px;
+        }
+      }
+    }
+
+    &__header__avatar {
+      width: 52px;
+      height: 52px;
+      font-size: 20px;
+    }
+
+    &__meta {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+
+    &__meta__divider {
+      display: none;
+    }
+
+    &__actions {
+      flex-direction: column;
+    }
+
+    &__actions__view-btn,
+    &__actions__evaluate-btn {
+      width: 100%;
     }
   }
 }
