@@ -161,9 +161,11 @@ export class App implements OnInit {
         },
         complete: () => {
           this.isMatching = false;
-          hasError
-            ? this.toastr.warning('Matching complete, but some candidates failed.')
-            : this.toastr.success('Matching complete! Candidates ranked by best fit.');
+          if (hasError) {
+            this.toastr.warning('Matching complete, but some candidates failed.');
+          } else {
+            this.toastr.success('Matching complete! Candidates ranked by best fit.');
+          }
         },
       });
   }
