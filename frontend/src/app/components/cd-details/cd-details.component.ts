@@ -33,7 +33,8 @@ export class CdDetailsComponent {
     private destroyRef: DestroyRef,
   ) {}
 
-  ringStyle(percentage: number) {
+  // Build the circular score styling based on the match percentage.
+  ringStyle(percentage: number): { background: string } {
     const color = this.scoreColor(percentage);
     const deg = (percentage / 100) * 360;
 
@@ -42,21 +43,22 @@ export class CdDetailsComponent {
     };
   }
 
-  scoreColor(percentage: number): string {
+  public scoreColor(percentage: number): string {
     if (percentage >= 75) return 'var(--mint)';
     if (percentage >= 50) return 'var(--amber)';
 
     return 'var(--coral)';
   }
 
-  scoreLabel(percentage: number): string {
+  public scoreLabel(percentage: number): string {
     if (percentage >= 75) return 'Strong match';
     if (percentage >= 50) return 'Partial match';
 
     return 'Weak match';
   }
 
-  evaluateFit() {
+  // Evaluate the currently selected candidate against the uploaded job description.
+  evaluateFit(): void {
     if (!this.candidate) {
       return;
     }
@@ -99,7 +101,8 @@ export class CdDetailsComponent {
       });
   }
 
-  downloadResume(fileName: string) {
+  // Download the selected candidate resume file.
+  downloadResume(fileName: string): void {
     this.talentMatchService
       .downloadUploadedFile(fileName, UploadType.CD)
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -120,7 +123,8 @@ export class CdDetailsComponent {
       });
   }
 
-  closeDetailsModal() {
+  // Close the modal and reset the selected candidate state.
+  closeDetailsModal(): void {
     this.talentMatchService.isModalOpen.set({ state: false, selectedData: null, uploadedType: '' });
   }
 }

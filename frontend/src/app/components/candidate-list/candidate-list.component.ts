@@ -35,7 +35,8 @@ export class CandidateListComponent {
     private toastr: ToastrService,
   ) {}
 
-  ringStyle(percentage: number) {
+  // Build the circular score styling based on the match percentage.
+  ringStyle(percentage: number): { background: string } {
     const color = this.scoreColor(percentage);
     const deg = (percentage / 100) * 360;
 
@@ -44,23 +45,25 @@ export class CandidateListComponent {
     };
   }
 
-  scoreColor(percentage: number): string {
+  public scoreColor(percentage: number): string {
     if (percentage >= 75) return 'var(--mint)';
     if (percentage >= 50) return 'var(--amber)';
     return 'var(--coral)';
   }
 
-  scoreLabel(percentage: number): string {
+  public scoreLabel(percentage: number): string {
     if (percentage >= 75) return 'Strong match';
     if (percentage >= 50) return 'Partial match';
     return 'Weak match';
   }
 
-  fetchCandidateMatchScores() {
+  // Emit a signal to start the overall candidate evaluation process.
+  fetchCandidateMatchScores(): void {
     this.getCandidateMatchScores.emit(true);
   }
 
-  downloadResume(fileName: string) {
+  // Download the uploaded candidate resume as a file.
+  downloadResume(fileName: string): void {
     this.talentMatchService
       .downloadUploadedFile(fileName, UploadType.CD)
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -81,7 +84,8 @@ export class CandidateListComponent {
       });
   }
 
-  openDetails(candidate: CandidateData) {
+  // Open the details modal for the selected candidate.
+  openDetails(candidate: CandidateData): void {
     this.talentMatchService.isModalOpen.set({
       state: true,
       selectedData: candidate,

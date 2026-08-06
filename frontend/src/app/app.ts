@@ -47,6 +47,7 @@ export class App implements OnInit {
     private destroyRef: DestroyRef,
     private toastr: ToastrService,
   ) {
+    // Keep the candidate list in sync whenever a modal evaluation updates the shared signal.
     effect(() => {
       const candidateEvaluated = this.talentMatchService.isCandidateEvaluated();
 
@@ -63,6 +64,7 @@ export class App implements OnInit {
     this.getCandidateList();
   }
 
+  // Update a single candidate in the local list state without rebuilding the whole array.
   private updateCandidateState(filename: string | undefined, patch: Partial<CandidateData>) {
     if (!filename) {
       return;
@@ -74,7 +76,8 @@ export class App implements OnInit {
     this.cdr.markForCheck();
   }
 
-  getCandidateList() {
+  // Load candidates from the backend and preserve any existing match score already known locally.
+  getCandidateList(): void {
     this.talentMatchService
       .getCandidateList()
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -101,14 +104,19 @@ export class App implements OnInit {
       });
   }
 
-  onFileProcessed(response: JobDescriptionData | CandidateData | null, uploadType: UploadType) {
+  // Refresh the candidate list after a resume or job description upload is processed.
+  onFileProcessed(
+    response: JobDescriptionData | CandidateData | null,
+    uploadType: UploadType,
+  ): void {
     if (uploadType === UploadType.JD) {
       this.uploadedJdResult = response as JobDescriptionData;
     }
     this.getCandidateList();
   }
 
-  fetchCandidateMatchScores(response: boolean) {
+  // Evaluate all candidates that do not yet have a match percentage.
+  fetchCandidateMatchScores(response: boolean): void {
     if (!response) {
       return;
     }

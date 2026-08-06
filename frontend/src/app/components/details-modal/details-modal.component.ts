@@ -22,6 +22,7 @@ export class DetailsModalComponent {
     private talentMatchService: TalentMatchService,
     private cdr: ChangeDetectorRef,
   ) {
+    // Scroll the modal content when the evaluated candidate is the one currently open.
     effect(() => {
       const candidateEvaluated = this.talentMatchService.isCandidateEvaluated();
 
@@ -32,13 +33,14 @@ export class DetailsModalComponent {
     });
   }
 
-  onBackdropClick(event: MouseEvent) {
+  onBackdropClick(event: MouseEvent): void {
     if ((event.target as HTMLElement).classList.contains('modal-backdrop')) {
       this.onClose();
     }
   }
 
-  scrollModalToTop() {
+  // Scroll the modal's own scrollable content area to the top.
+  scrollModalToTop(): void {
     const modalScroll = this.modalScrollContainer?.nativeElement;
 
     if (modalScroll) {
@@ -46,7 +48,8 @@ export class DetailsModalComponent {
     }
   }
 
-  onClose() {
+  // Close the modal and clear the currently selected content.
+  onClose(): void {
     this.talentMatchService.isModalOpen.set({
       state: false,
       selectedData: null,
@@ -55,7 +58,7 @@ export class DetailsModalComponent {
   }
 
   @HostListener('document:keydown.escape')
-  onEscapeKey() {
+  onEscapeKey(): void {
     this.onClose();
   }
 }
