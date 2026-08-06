@@ -54,7 +54,12 @@ export class CdDetailsComponent {
   }
 
   evaluateFit() {
+    if (!this.candidate) {
+      return;
+    }
+
     this.isMatching = true;
+    this.talentMatchService.isCandidateEvaluated.set({ ...this.candidate, isMatching: true });
 
     this.talentMatchService
       .getMatchScore(this.candidate, this.uploadedJdResult)
@@ -69,18 +74,24 @@ export class CdDetailsComponent {
           this.toastr.error(
             `Failed to evaluate fit for ${this.candidate?.name}. Please try again.`,
           );
+          this.talentMatchService.isCandidateEvaluated.set({
+            ...this.candidate!,
+            isMatching: false,
+          });
           return;
         }
 
         this.candidate = {
           ...this.candidate,
           match_percentage: matchResult.match_percentage,
+          isMatching: false,
         };
 
         this.cdr.markForCheck();
         this.toastr.success(
           `${this.candidate.name} evaluated — ${matchResult.match_percentage}% match.`,
         );
+        this.talentMatchService.isCandidateEvaluated.set(this.candidate);
       });
   }
 

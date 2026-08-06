@@ -1,4 +1,12 @@
-import { Component, HostListener, ViewEncapsulation } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  effect,
+  ElementRef,
+  HostListener,
+  ViewChild,
+  ViewEncapsulation,
+} from '@angular/core';
 import { TalentMatchService } from '../../services';
 
 @Component({
@@ -8,11 +16,33 @@ import { TalentMatchService } from '../../services';
   encapsulation: ViewEncapsulation.None,
 })
 export class DetailsModalComponent {
-  constructor(private talentMatchService: TalentMatchService) {}
+  @ViewChild('modalScrollContainer') modalScrollContainer?: ElementRef<HTMLElement>;
+
+  constructor(
+    private talentMatchService: TalentMatchService,
+    private cdr: ChangeDetectorRef,
+  ) {
+    effect(() => {
+      const candidateEvaluated = this.talentMatchService.isCandidateEvaluated();
+
+      if (candidateEvaluated && !candidateEvaluated.isMatching) {
+        this.scrollModalToTop();
+        this.cdr.markForCheck();
+      }
+    });
+  }
 
   onBackdropClick(event: MouseEvent) {
     if ((event.target as HTMLElement).classList.contains('modal-backdrop')) {
       this.onClose();
+    }
+  }
+
+  scrollModalToTop() {
+    const modalScroll = this.modalScrollContainer?.nativeElement;
+
+    if (modalScroll) {
+      modalScroll.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
 

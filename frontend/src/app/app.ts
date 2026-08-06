@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectorRef, Component, effect, OnInit, ViewEncapsulation } from '@angular/core';
 import {
   HeaderComponent,
   CandidateListComponent,
@@ -32,13 +32,31 @@ export class App implements OnInit {
   uploadTypeEnum = UploadType;
   uploadedJdResult: JobDescriptionData | null = null;
   isMatching: boolean = false;
-  selectedCandidate: CandidateData | null = null;
 
   constructor(
     public talentMatchService: TalentMatchService,
     private cdr: ChangeDetectorRef,
     private toastr: ToastrService,
-  ) {}
+  ) {
+    effect(() => {
+      const candidateEvaluated = this.talentMatchService.isCandidateEvaluated();
+
+      if (candidateEvaluated) {
+        this.candidates = this.candidates.map((c) => {
+          if (c.filename !== candidateEvaluated.filename) {
+            return c;
+          }
+
+          return {
+            ...c,
+            match_percentage: candidateEvaluated.match_percentage,
+            isMatching: candidateEvaluated.isMatching ?? false,
+          };
+        });
+        this.cdr.markForCheck();
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.getCandidateList();
@@ -125,13 +143,5 @@ export class App implements OnInit {
             : this.toastr.success('Matching complete! Candidates ranked by best fit.');
         },
       });
-  }
-
-  openDetails(candidate: CandidateData) {
-    this.selectedCandidate = candidate;
-  }
-
-  closeDetails() {
-    this.selectedCandidate = null;
   }
 }

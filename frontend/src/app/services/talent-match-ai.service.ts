@@ -11,6 +11,7 @@ export class TalentMatchService {
     selectedData: null as CandidateData | JobDescriptionData | null,
     uploadedType: '',
   });
+  public isCandidateEvaluated = signal<CandidateData | null>(null);
 
   constructor(private http: HttpClient) {}
 
