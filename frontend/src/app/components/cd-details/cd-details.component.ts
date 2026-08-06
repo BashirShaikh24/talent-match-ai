@@ -1,11 +1,13 @@
 import {
   ChangeDetectorRef,
   Component,
+  DestroyRef,
   EventEmitter,
   Input,
   Output,
   ViewEncapsulation,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CandidateData, JobDescriptionData, UploadType } from '../../models';
 import { catchError, map, of } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
@@ -28,6 +30,7 @@ export class CdDetailsComponent {
     public talentMatchService: TalentMatchService,
     private toastr: ToastrService,
     private cdr: ChangeDetectorRef,
+    private destroyRef: DestroyRef,
   ) {}
 
   ringStyle(percentage: number) {
@@ -66,6 +69,7 @@ export class CdDetailsComponent {
       .pipe(
         map((matchResult: CandidateData) => ({ matchResult, error: null })),
         catchError((err) => of({ matchResult: null, error: err })),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(({ matchResult, error }) => {
         this.isMatching = false;
@@ -96,15 +100,24 @@ export class CdDetailsComponent {
   }
 
   downloadResume(fileName: string) {
-    this.talentMatchService.downloadUploadedFile(fileName, UploadType.CD).subscribe((blob) => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+    this.talentMatchService
+      .downloadUploadedFile(fileName, UploadType.CD)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
 
-      a.href = url;
-      a.download = fileName;
-      a.click();
-      window.URL.revokeObjectURL(url);
-    });
+          a.href = url;
+          a.download = fileName;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        },
+        error: (err) => {
+          console.error('Download failed:', err);
+          this.toastr.error('Failed to download the resume. Please try again.');
+        },
+      });
   }
 
   closeDetailsModal() {

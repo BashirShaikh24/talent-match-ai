@@ -7,7 +7,7 @@
   </div>
 
   <div class="candidate-list__wrapper">
-    @for (c of candidates; track $index) {
+    @for (c of candidates; track c.filename ?? c.name ?? $index) {
       <article class="candidate-list__wrapper__card">
         @if (!c.isMatching) {
           <div class="candidate-list__wrapper__card__inner">
@@ -28,7 +28,7 @@
               </div>
             </div>
             <div class="candidate-list__wrapper__card__score-wrapper">
-              @if (c.match_percentage) {
+              @if (c.match_percentage != null) {
                 <span
                   class="candidate-list__wrapper__card__score-wrapper__score-tag"
                   [style.color]="scoreColor(c.match_percentage)"

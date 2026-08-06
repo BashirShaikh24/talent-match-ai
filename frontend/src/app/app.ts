@@ -1,4 +1,12 @@
-import { ChangeDetectorRef, Component, effect, OnInit, ViewEncapsulation } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  DestroyRef,
+  effect,
+  OnInit,
+  ViewEncapsulation,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   HeaderComponent,
   CandidateListComponent,
@@ -36,24 +44,17 @@ export class App implements OnInit {
   constructor(
     public talentMatchService: TalentMatchService,
     private cdr: ChangeDetectorRef,
+    private destroyRef: DestroyRef,
     private toastr: ToastrService,
   ) {
     effect(() => {
       const candidateEvaluated = this.talentMatchService.isCandidateEvaluated();
 
-      if (candidateEvaluated) {
-        this.candidates = this.candidates.map((c) => {
-          if (c.filename !== candidateEvaluated.filename) {
-            return c;
-          }
-
-          return {
-            ...c,
-            match_percentage: candidateEvaluated.match_percentage,
-            isMatching: candidateEvaluated.isMatching ?? false,
-          };
+      if (candidateEvaluated?.filename) {
+        this.updateCandidateState(candidateEvaluated.filename, {
+          match_percentage: candidateEvaluated.match_percentage,
+          isMatching: candidateEvaluated.isMatching ?? false,
         });
-        this.cdr.markForCheck();
       }
     });
   }
@@ -62,22 +63,42 @@ export class App implements OnInit {
     this.getCandidateList();
   }
 
+  private updateCandidateState(filename: string | undefined, patch: Partial<CandidateData>) {
+    if (!filename) {
+      return;
+    }
+
+    this.candidates = this.candidates.map((candidate) =>
+      candidate.filename === filename ? { ...candidate, ...patch } : candidate,
+    );
+    this.cdr.markForCheck();
+  }
+
   getCandidateList() {
-    this.talentMatchService.getCandidateList().subscribe((data) => {
-      const freshCandidates = data as CandidateData[];
+    this.talentMatchService
+      .getCandidateList()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((data) => {
+        const freshCandidates = data as CandidateData[];
 
-      this.candidates = freshCandidates.map((fresh) => {
-        const existing = this.candidates.find((c) => c.filename === fresh.filename);
+        this.candidates = freshCandidates.map((fresh) => {
+          const existing = this.candidates.find(
+            (candidate) => candidate.filename === fresh.filename,
+          );
 
-        if (existing?.match_percentage != null) {
-          return { ...fresh, match_percentage: existing.match_percentage };
-        }
+          if (existing?.match_percentage != null) {
+            return {
+              ...fresh,
+              match_percentage: existing.match_percentage,
+              isMatching: false,
+            };
+          }
 
-        return fresh;
+          return { ...fresh, isMatching: false };
+        });
+
+        this.cdr.markForCheck();
       });
-
-      this.cdr.markForCheck();
-    });
   }
 
   onFileProcessed(response: JobDescriptionData | CandidateData | null, uploadType: UploadType) {
@@ -107,16 +128,14 @@ export class App implements OnInit {
     from(toMatch)
       .pipe(
         concatMap((candidate) => {
-          this.candidates = this.candidates.map((c) =>
-            c.filename === candidate.filename ? { ...c, isMatching: true } : c,
-          );
-          this.cdr.markForCheck();
+          this.updateCandidateState(candidate.filename, { isMatching: true });
 
           return this.talentMatchService.getMatchScore(candidate, this.uploadedJdResult).pipe(
             map((matchResult: CandidateData) => ({ candidate, matchResult, error: null })),
             catchError((err) => of({ candidate, matchResult: null, error: err })),
           );
         }),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
         next: ({ candidate, matchResult, error }) => {
@@ -125,16 +144,12 @@ export class App implements OnInit {
             this.isMatching = false;
           }
 
-          this.candidates = this.candidates.map((c) =>
-            c.filename === candidate.filename
-              ? {
-                  ...c,
-                  match_percentage: matchResult ? matchResult.match_percentage : c.match_percentage,
-                  isMatching: false,
-                }
-              : c,
-          );
-          this.cdr.markForCheck();
+          this.updateCandidateState(candidate.filename, {
+            match_percentage: matchResult
+              ? matchResult.match_percentage
+              : candidate.match_percentage,
+            isMatching: false,
+          });
         },
         complete: () => {
           this.isMatching = false;
