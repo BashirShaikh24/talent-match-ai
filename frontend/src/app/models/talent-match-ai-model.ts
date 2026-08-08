@@ -5,7 +5,7 @@ export interface CandidateData {
   role?: string;
   summary?: string;
   responsibilities?: string[];
-  match_percentage?: number;
+  match_percentage?: number | null;
   email?: string;
   contact_no?: number;
   isMatching?: boolean;

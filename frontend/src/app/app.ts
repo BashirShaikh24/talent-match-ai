@@ -76,7 +76,21 @@ export class App implements OnInit {
     this.cdr.markForCheck();
   }
 
-  // Load candidates from the backend and preserve any existing match score already known locally.
+  // Clear the UI-only match scores whenever a new job description is loaded.
+  private resetEvaluationState(): void {
+    this.isMatching = false;
+    this.talentMatchService.isCandidateEvaluated.set(null);
+
+    this.candidates = this.candidates.map((candidate: CandidateData) => ({
+      ...candidate,
+      match_percentage: null,
+      isMatching: false,
+    }));
+
+    this.cdr.markForCheck();
+  }
+
+  // Load candidates from the backend and hydrate the UI with the server payload only.
   getCandidateList(): void {
     this.talentMatchService
       .getCandidateList()
@@ -84,21 +98,11 @@ export class App implements OnInit {
       .subscribe((data) => {
         const freshCandidates = data as CandidateData[];
 
-        this.candidates = freshCandidates.map((fresh) => {
-          const existing = this.candidates.find(
-            (candidate) => candidate.filename === fresh.filename,
-          );
-
-          if (existing?.match_percentage != null) {
-            return {
-              ...fresh,
-              match_percentage: existing.match_percentage,
-              isMatching: false,
-            };
-          }
-
-          return { ...fresh, isMatching: false };
-        });
+        this.candidates = freshCandidates.map((fresh) => ({
+          ...fresh,
+          isMatching: false,
+          match_percentage: fresh.match_percentage ?? null,
+        }));
 
         this.cdr.markForCheck();
       });
@@ -111,8 +115,10 @@ export class App implements OnInit {
   ): void {
     if (uploadType === UploadType.JD) {
       this.uploadedJdResult = response as JobDescriptionData;
+      this.resetEvaluationState();
+    } else {
+      this.getCandidateList();
     }
-    this.getCandidateList();
   }
 
   // Evaluate all candidates that do not yet have a match percentage.
