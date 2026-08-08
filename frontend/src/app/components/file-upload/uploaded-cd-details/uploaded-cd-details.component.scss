@@ -140,11 +140,16 @@
         border-radius: 6px;
         background: var(--indigo-dim);
         color: var(--indigo);
+        max-width: 80px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
 
         &--more {
           color: var(--slate);
           background: var(--paper);
           border-color: var(--border);
+          max-width: fit-content;
         }
       }
     }

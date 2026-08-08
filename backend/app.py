@@ -1,21 +1,38 @@
-import os
 import json
-from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
-from dotenv import load_dotenv
+import os
+from datetime import datetime, timezone
+from pathlib import Path
+
 import pdfplumber
+from dotenv import load_dotenv
+from flask import Flask, jsonify, request, send_from_directory
+from flask_cors import CORS
 from groq import Groq
-from datetime import datetime
 from werkzeug.utils import secure_filename
 
 load_dotenv()
 
+BASE_DIR = Path(__file__).resolve().parent
 app = Flask(__name__)
 CORS(app)  # allows Angular (localhost:4200) to call this API (localhost:5000)
 
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-UPLOAD_FOLDER_INPUT = "input"
-UPLOAD_FOLDER_OUTPUT = "output"
+client = None
+UPLOAD_FOLDER_INPUT = str(BASE_DIR / "input")
+UPLOAD_FOLDER_OUTPUT = str(BASE_DIR / "output")
+
+
+def get_groq_client():
+    global client
+
+    if client is not None:
+        return client
+
+    api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        raise RuntimeError("GROQ_API_KEY is not configured")
+
+    client = Groq(api_key=api_key)
+    return client
 
 
 @app.route("/api/upload-resume", methods=["POST"])
@@ -36,7 +53,7 @@ def upload_resume():
     # 3. Build a safe, unique filename
     safe_name = secure_filename(file.filename)
     name, ext = os.path.splitext(safe_name)
-    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
     new_filename = f"{name}_{timestamp}{ext}"
 
     # 4. Build destination folder and ensure it exists
@@ -74,93 +91,409 @@ def upload_resume():
 def analyze_document_with_ai(filepath, upload_type):
     # Extract text from the resume PDF
     upload_document_text = ""
-    with pdfplumber.open(filepath) as pdf:
-        for page in pdf.pages:
-            page_text = page.extract_text()
-            if page_text:
-                upload_document_text += page_text + "\n"
+
+    try:
+        with pdfplumber.open(filepath) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    upload_document_text += page_text + "\n"
+    except (FileNotFoundError, OSError, ValueError) as exc:
+        return (
+            None,
+            jsonify({"error": "Could not read the uploaded PDF", "details": str(exc)}),
+            422,
+        )
 
     if not upload_document_text.strip():
-        return jsonify({"error": "Could not extract text from PDF"}), 422
+        return None, jsonify({"error": "Could not extract text from PDF"}), 422
 
     # Candidate Extract Prompt
-    cd_prompt = f"""Extract structured information from this resume and respond
-    with ONLY valid JSON (no markdown, no commentary) in this exact shape:
+    cd_prompt = f"""
+    You are an expert recruitment assistant specializing in resume analysis.
+
+    Your task is to extract structured information from the candidate's resume.
+
+    Return ONLY valid JSON.
+    Do NOT include markdown, explanations, or additional text.
+
+    JSON Format
+
     {{
-    "name": "string",
-    "role": "string (their current or most recent job title)",
-    "skills": (as a list),
-    "summary": "2-3 sentence summary of their background and seniority level",
-    "responsibilities": (as a list),
-    "email": "string",
-    "contact_no": "number",
-    "location": "string",
-    "years_of_experience": 0
+        "name": "string",
+        "role": "string",
+        "skills": [],
+        "summary": "string",
+        "responsibilities": [],
+        "email": "string",
+        "contact_no": "string",
+        "location": "string",
+        "years_of_experience": 0
     }}
 
-    Guidelines:
-    - "skills" should include both explicitly listed skills AND ones clearly
-    implied by their experience (e.g., "built CI/CD pipelines in GitHub Actions"
-    implies both "CI/CD" and "GitHub Actions", even without a skills section).
-    - "responsibilities" should be YOUR OWN paraphrase of what this person likely
-    did day-to-day across their roles — not copied verbatim from resume bullets.
-    - "years_of_experience" should be your best estimate based on their work
-    history dates, as a whole number.
-    - Infer seniority (junior/mid/senior/lead) from experience depth and scope,
-    and reflect that in "summary".
+    =========================
+    EXTRACTION RULES
+    =========================
 
-    Resume text:
+    1. NAME
+
+    Extract the candidate's full name.
+
+    -------------------------
+
+    2. ROLE
+
+    Extract the candidate's current or most recent professional job title.
+
+    Do not invent or modify the role.
+
+    -------------------------
+
+    3. SKILLS
+
+    Extract all professional skills that are either:
+
+    • Explicitly listed in the resume
+    OR
+    • Clearly demonstrated through work experience.
+
+    Skills may include:
+
+    - Programming languages
+    - Frameworks
+    - Libraries
+    - Databases
+    - Cloud platforms
+    - Software
+    - Tools
+    - Platforms
+    - Technologies
+    - Methodologies
+    - Business applications
+    - Professional techniques
+    - Certifications representing a skill
+    - Domain knowledge
+
+    Do NOT include:
+
+    - Company names
+    - Responsibilities
+    - Soft skills
+    - Personality traits
+    - Generic adjectives
+
+    Normalization Rules
+
+    Normalize ONLY obvious naming variations.
+
+    Examples
+
+    Angular 17 → Angular
+    Angular 18 → Angular
+    ReactJS → React
+    RESTful APIs → REST API
+    REST Services → REST API
+    MS Excel → Microsoft Excel
+    Power BI Desktop → Power BI
+
+    Remove duplicate skills.
+
+    IMPORTANT
+
+    If two skills are different technologies,
+    DO NOT merge them.
+
+    Examples
+
+    Angular ≠ AngularJS
+
+    Java ≠ JavaScript
+
+    SQL ≠ SQL Server
+
+    AWS ≠ Azure
+
+    If you are NOT confident that two skills represent the same technology,
+    KEEP THE ORIGINAL SKILL.
+
+    Never guess.
+
+    -------------------------
+
+    4. SUMMARY
+
+    Generate a concise professional summary.
+
+    2–3 sentences.
+
+    Include:
+
+    - Overall background
+    - Seniority
+    - Primary expertise
+
+    Do not exaggerate.
+
+    -------------------------
+
+    5. RESPONSIBILITIES
+
+    Summarize the candidate's primary responsibilities.
+
+    Requirements
+
+    - Preserve original meaning
+    - Do NOT copy resume bullets verbatim
+    - Use concise action statements
+    - Remove duplicates
+    - Maximum 10 items
+    - Do NOT invent responsibilities
+
+    -------------------------
+
+    6. EMAIL
+
+    Extract email.
+
+    -------------------------
+
+    7. CONTACT NUMBER
+
+    Extract primary phone number.
+
+    -------------------------
+
+    8. LOCATION
+
+    Extract latest location.
+
+    -------------------------
+
+    9. YEARS OF EXPERIENCE
+
+    Estimate total professional experience based on employment history.
+
+    Return a whole number.
+
+    =========================
+    OUTPUT RULES
+    =========================
+
+    Return ONLY valid JSON.
+
+    Remove duplicate skills.
+
+    Remove duplicate responsibilities.
+
+    Do not include markdown.
+
+    Resume
+
     {upload_document_text}
     """
+
     # Job Description Extract Prompt
-    jd_prompt = f"""Extract structured information from this job description and
-    respond with ONLY valid JSON (no markdown, no commentary) in this exact shape:
+    jd_prompt = f"""
+    You are an expert recruitment assistant specializing in job description analysis.
+
+    Your task is to extract structured information from a Job Description.
+
+    Return ONLY valid JSON.
+
+    Do NOT include markdown, explanations, or additional text.
+
+    JSON Format
 
     {{
-    "title": "string (the job title being hired for)",
-    "required_skills": ["string", "string"],
-    "nice_to_have_skills": ["string", "string"],
-    "responsibilities": ["string", "string"],
-    "min_years_experience": 0,
-    "max_years_experience": 0,
-    "summary": "2-3 sentence summary of the role and what success looks like",
+        "title": "string",
+        "required_skills": [],
+        "nice_to_have_skills": [],
+        "responsibilities": [],
+        "min_years_experience": 0,
+        "max_years_experience": 0,
+        "summary": "string"
     }}
 
-    Guidelines:
-    - Separate "required_skills" (must-haves, non-negotiable) from
-    "nice_to_have_skills" (preferred but not mandatory) based on the language
-    used (e.g., "must have", "required" vs "nice to have", "bonus", "plus").
-    - "responsibilities" should paraphrase the core duties in your own words,
-    not copy bullet points verbatim.
-    - "min_years_experience" and "max_years_experience" should reflect the
-    experience range stated or implied in the JD:
-    * If a range is explicitly stated (e.g., "3-5 years"), use those exact
-        numbers: min=3, max=5.
-    * If only a single number is stated (e.g., "5+ years"), use it as the
-        min, and set max to a reasonable upper bound for that seniority
-        (e.g., min=5, max=8).
-    * If no number is stated at all, infer both from seniority language:
-        - "Junior" / "Entry-level" → min=0, max=2
-        - "Mid-level" → min=2, max=5
-        - "Senior" → min=5, max=8
-        - "Lead" / "Staff" / "Principal" → min=8, max=12
-    * "max_years_experience" should always be greater than or equal to
-        "min_years_experience".
+    =========================
+    EXTRACTION RULES
+    =========================
 
-    Job description text:
+    1. TITLE
+
+    Extract the advertised job title.
+
+    -------------------------
+
+    2. REQUIRED SKILLS
+
+    Extract ONLY mandatory skills.
+
+    Look for wording such as:
+
+    - Must have
+    - Required
+    - Mandatory
+    - Essential
+    - Strong experience
+    - Hands-on experience
+    - Proven experience
+
+    Normalization Rules
+
+    Normalize ONLY obvious naming variations.
+
+    Examples
+
+    Angular 17 → Angular
+
+    ReactJS → React
+
+    RESTful APIs → REST API
+
+    MS Excel → Microsoft Excel
+
+    Power BI Desktop → Power BI
+
+    Remove duplicates.
+
+    IMPORTANT
+
+    Do NOT merge different technologies.
+
+    Angular ≠ AngularJS
+
+    Java ≠ JavaScript
+
+    SQL ≠ SQL Server
+
+    AWS ≠ Azure
+
+    If uncertain,
+    KEEP THE ORIGINAL SKILL.
+
+    -------------------------
+
+    3. NICE TO HAVE SKILLS
+
+    Extract preferred skills.
+
+    Look for
+
+    - Nice to have
+    - Preferred
+    - Bonus
+    - Good to have
+    - Plus
+    - Exposure to
+    - Familiarity with
+
+    Apply the same normalization rules.
+
+    Remove duplicates.
+
+    -------------------------
+
+    4. RESPONSIBILITIES
+
+    Summarize responsibilities.
+
+    Requirements
+
+    - Preserve meaning
+    - Do not copy JD verbatim
+    - Use concise action statements
+    - Remove duplicates
+    - Maximum 10 items
+    - Do not invent responsibilities
+
+    -------------------------
+
+    5. EXPERIENCE
+
+    If a range exists
+
+    Example
+
+    3–5 years
+
+    Return
+
+    min = 3
+
+    max = 5
+
+    If only one value
+
+    5+ years
+
+    Return
+
+    min = 5
+
+    max = 8
+
+    If not specified
+
+    Infer
+
+    Junior → 0–2
+
+    Mid → 2–5
+
+    Senior → 5–8
+
+    Lead / Principal / Staff → 8–12
+
+    -------------------------
+
+    6. SUMMARY
+
+    Generate a concise 2–3 sentence summary describing
+
+    - Purpose of the role
+    - Main expectations
+    - Success profile
+
+    Do not copy the JD.
+
+    =========================
+    OUTPUT RULES
+    =========================
+
+    Return ONLY valid JSON.
+
+    Remove duplicate skills.
+
+    Remove duplicate responsibilities.
+
+    Normalize ONLY obvious naming variations.
+
+    If uncertain,
+    preserve the original value.
+
+    Do not invent required skills.
+
+    Do not include markdown.
+
+    Job Description
+
     {upload_document_text}
     """
 
-    completion = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[
-            {
-                "role": "user",
-                "content": cd_prompt if upload_type == "CD" else jd_prompt,
-            }
-        ],
-        response_format={"type": "json_object"},
-    )
+    try:
+        groq_client = get_groq_client()
+        completion = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {
+                    "role": "user",
+                    "content": cd_prompt if upload_type == "CD" else jd_prompt,
+                }
+            ],
+            response_format={"type": "json_object"},
+        )
+    except (RuntimeError, ValueError, OSError) as exc:
+        return None, jsonify({"error": "AI analysis failed", "details": str(exc)}), 502
 
     ai_result_text = completion.choices[0].message.content
 
@@ -177,16 +510,17 @@ def analyze_document_with_ai(filepath, upload_type):
 
 
 def save_upload_record(upload_type, filename, ai_result):
+    os.makedirs(UPLOAD_FOLDER_OUTPUT, exist_ok=True)
     store_path = os.path.join(UPLOAD_FOLDER_OUTPUT, f"{upload_type.lower()}_data.json")
 
     records = []
     if os.path.exists(store_path):
-        with open(store_path, "r") as f:
+        with open(store_path, "r", encoding="utf-8") as f:
             records = json.load(f)
 
     records.append({"filename": filename, **ai_result})
 
-    with open(store_path, "w") as f:
+    with open(store_path, "w", encoding="utf-8") as f:
         json.dump(records, f, indent=2)
 
 
@@ -249,11 +583,15 @@ def get_match_score_with_ai(cd_data, jd_data):
     Years of experience: {cd_data.get("years_of_experience")}
     """
 
-    completion = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[{"role": "user", "content": prompt}],
-        response_format={"type": "json_object"},
-    )
+    try:
+        groq_client = get_groq_client()
+        completion = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+        )
+    except (RuntimeError, ValueError, OSError):
+        return None
 
     try:
         match_result = json.loads(completion.choices[0].message.content)
@@ -285,6 +623,7 @@ def download_uploaded_file(filename):
         ), 400
 
     safe_upload_type = secure_filename(upload_type).lower()
+    safe_filename_value = secure_filename(filename)
     new_path = os.path.join(UPLOAD_FOLDER_INPUT, f"{safe_upload_type}_list")
 
     if not os.path.isdir(new_path):
@@ -292,7 +631,7 @@ def download_uploaded_file(filename):
             {"error": f"Upload folder not found for type: {upload_type}"}
         ), 404
 
-    return send_from_directory(new_path, filename, as_attachment=True)
+    return send_from_directory(new_path, safe_filename_value, as_attachment=True)
 
 
 if __name__ == "__main__":

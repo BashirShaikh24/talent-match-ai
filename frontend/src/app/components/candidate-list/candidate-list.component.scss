@@ -84,6 +84,7 @@ app-candidate-list {
           color: var(--lighter-gray);
           margin: 10px 0 12px;
           display: -webkit-box;
+          line-clamp: 2;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
@@ -223,6 +224,7 @@ app-candidate-list {
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                max-width: 200px;
               }
             }
 
