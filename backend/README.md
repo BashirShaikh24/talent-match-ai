@@ -2,11 +2,13 @@
 
 This folder contains the Flask backend for Talent Match AI.
 
-## Prerequisites
+## ⚙️ Prerequisites
 
-- Python 3.9+
-- pip
-- A valid Groq API key
+* **Python 3.9+**
+* **pip**
+* **Node.js**
+* **npm**
+* A valid **Groq API key**
 
 ## Setup
 
@@ -30,10 +32,4 @@ python app.py
 
 The backend runs on `http://localhost:5000`.
 
-## Notes
-
-- Upload PDF files for resume or job description processing.
-- AI extraction and matching depend on the Groq API key.
-- Generated output is stored in the `output` folder.
-
-Use the root README for the overall project summary and the frontend README for client-side setup.
+Note: Make sure your environment file is excluded from Git using `.gitignore`.

@@ -2,9 +2,11 @@
 
 This folder contains the Angular frontend for Talent Match AI.
 
-## Prerequisites
+## ⚙️ Prerequisites
 
-- Node.js and npm
+* **Angular CLI**
+* **Node.js**
+* **npm**
 
 ## Run Locally
 
@@ -20,7 +22,3 @@ Open `http://localhost:4200/` in your browser.
 ```bash
 npm run build
 ```
-
-## Notes
-
-Use the root README for the full project overview and the backend README for server setup details.
