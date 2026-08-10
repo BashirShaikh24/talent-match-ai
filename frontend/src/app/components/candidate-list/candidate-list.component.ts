@@ -78,7 +78,6 @@ export class CandidateListComponent {
           window.URL.revokeObjectURL(url);
         },
         error: (err) => {
-          console.error('Download failed:', err);
           this.toastr.error('Failed to download the resume. Please try again.');
         },
       });

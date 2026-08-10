@@ -2,12 +2,14 @@ import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Literal
 
 import pdfplumber
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from groq import Groq
+from pydantic import BaseModel, ConfigDict, ValidationError
 from werkzeug.utils import secure_filename
 
 load_dotenv()
@@ -19,6 +21,65 @@ CORS(app)  # allows Angular (localhost:4200) to call this API (localhost:5000)
 client = None
 UPLOAD_FOLDER_INPUT = str(BASE_DIR / "input")
 UPLOAD_FOLDER_OUTPUT = str(BASE_DIR / "output")
+
+MODEL_NAME = "openai/gpt-oss-120b"
+
+
+class CandidateExtract(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    role: str
+    skills: list[str]
+    summary: str
+    responsibilities: list[str]
+    email: str
+    contact_no: str
+    location: str
+    years_of_experience: int
+
+
+class JobDescriptionExtract(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str
+    required_skills: list[str]
+    nice_to_have_skills: list[str]
+    responsibilities: list[str]
+    min_years_experience: int
+    max_years_experience: int
+    summary: str
+
+
+class MatchResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    match_percentage: int
+    match_reasoning: str
+    matched_skills: list[str]
+    missing_required_skills: list[str]
+
+
+class DocumentTypeCheck(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    document_type: Literal["resume", "job_description", "other"]
+    confidence: Literal["low", "medium", "high"]
+    reasoning: str
+
+
+# Maps the uploadType the frontend sends ("CD" / "JD") to the document_type
+# label we expect the classifier to return for it.
+EXPECTED_DOCUMENT_TYPE = {
+    "CD": "resume",
+    "JD": "job_description",
+}
+
+DOCUMENT_TYPE_LABELS = {
+    "resume": "a candidate resume",
+    "job_description": "a job description",
+    "other": "neither a resume nor a job description",
+}
 
 
 def get_groq_client():
@@ -33,6 +94,79 @@ def get_groq_client():
 
     client = Groq(api_key=api_key)
     return client
+
+
+def call_groq_structured(
+    prompt: str,
+    schema_model: type[BaseModel],
+    schema_name: str,
+    model: str = MODEL_NAME,
+):
+    """
+    Calls Groq with response_format=json_schema (strict mode) built from a
+    Pydantic model, then validates+parses the result back into that model.
+
+    Returns (parsed_model, error_message). error_message is None on success.
+    """
+    try:
+        groq_client = get_groq_client()
+        completion = groq_client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": schema_name,
+                    "strict": True,
+                    "schema": schema_model.model_json_schema(),
+                },
+            },
+        )
+    except (RuntimeError, ValueError, OSError) as exc:
+        return None, f"AI request failed: {exc}"
+
+    raw_content = completion.choices[0].message.content
+
+    try:
+        parsed = schema_model.model_validate_json(raw_content)
+    except ValidationError as exc:
+        return None, f"AI response did not match expected schema: {exc}"
+    except json.JSONDecodeError:
+        return None, "AI response was not valid JSON"
+
+    return parsed, None
+
+
+def classify_document_type(document_text: str):
+    """
+    Lightweight classification pass that runs BEFORE the full (expensive)
+    extraction. Confirms whether the uploaded document is actually a resume
+    or a job description, so we can reject a mismatched upload early instead
+    of running a full extraction on the wrong document type.
+    """
+    prompt = f"""
+    You are a document classifier for a recruitment platform.
+
+    Look at the document below and classify it as exactly one of:
+
+    - "resume"            → a candidate's CV/resume (work history, skills, education, personal contact details)
+    - "job_description"   → a job posting/JD (role title, responsibilities, required skills, "we are hiring" language)
+    - "other"              → anything that is clearly neither of the above
+
+    Base your classification on the overall structure and intent of the
+    document, not just keyword matches.
+
+    Document
+
+    {document_text[:6000]}
+    """
+
+    # Use the smaller/faster model here — classification is a simple task
+    # and doesn't need the larger model's extra reasoning capacity.
+    parsed, error = call_groq_structured(
+        prompt, DocumentTypeCheck, "document_type_check", model="openai/gpt-oss-20b"
+    )
+    return parsed, error
 
 
 @app.route("/api/upload-resume", methods=["POST"])
@@ -108,28 +242,48 @@ def analyze_document_with_ai(filepath, upload_type):
     if not upload_document_text.strip():
         return None, jsonify({"error": "Could not extract text from PDF"}), 422
 
+    # ---------------------------------------------------------------
+    # Validate the uploaded document actually matches uploadType before
+    # running the full (expensive) extraction. Catches cases like a JD
+    # uploaded to the candidate section or vice versa.
+    # ---------------------------------------------------------------
+    expected_type = EXPECTED_DOCUMENT_TYPE.get(upload_type)
+
+    if expected_type is not None:
+        type_check, type_check_error = classify_document_type(upload_document_text)
+
+        if type_check_error:
+            # Don't hard-fail the whole upload just because the lightweight
+            # classification step had an issue — log and continue to the
+            # real extraction rather than blocking the user.
+            print(
+                f"Document type classification failed, skipping check: {type_check_error}"
+            )
+        elif type_check.document_type != expected_type:
+            expected_label = DOCUMENT_TYPE_LABELS[expected_type]
+
+            return (
+                None,
+                jsonify(
+                    {
+                        "error": "Document type mismatch",
+                        "details": f"This doesn't look like {expected_label}. Please upload {expected_label}.",
+                        "detected_document_type": type_check.document_type,
+                        "expected_document_type": expected_type,
+                        "confidence": type_check.confidence,
+                    }
+                ),
+                422,
+            )
+
     # Candidate Extract Prompt
+    # NOTE: the JSON Format block is no longer needed here since the schema
+    # is now enforced via response_format using CandidateExtract, but the
+    # extraction rules are still valuable instructions for the model.
     cd_prompt = f"""
     You are an expert recruitment assistant specializing in resume analysis.
 
     Your task is to extract structured information from the candidate's resume.
-
-    Return ONLY valid JSON.
-    Do NOT include markdown, explanations, or additional text.
-
-    JSON Format
-
-    {{
-        "name": "string",
-        "role": "string",
-        "skills": [],
-        "summary": "string",
-        "responsibilities": [],
-        "email": "string",
-        "contact_no": "string",
-        "location": "string",
-        "years_of_experience": 0
-    }}
 
     =========================
     EXTRACTION RULES
@@ -279,13 +433,9 @@ def analyze_document_with_ai(filepath, upload_type):
     OUTPUT RULES
     =========================
 
-    Return ONLY valid JSON.
-
     Remove duplicate skills.
 
     Remove duplicate responsibilities.
-
-    Do not include markdown.
 
     Resume
 
@@ -297,22 +447,6 @@ def analyze_document_with_ai(filepath, upload_type):
     You are an expert recruitment assistant specializing in job description analysis.
 
     Your task is to extract structured information from a Job Description.
-
-    Return ONLY valid JSON.
-
-    Do NOT include markdown, explanations, or additional text.
-
-    JSON Format
-
-    {{
-        "title": "string",
-        "required_skills": [],
-        "nice_to_have_skills": [],
-        "responsibilities": [],
-        "min_years_experience": 0,
-        "max_years_experience": 0,
-        "summary": "string"
-    }}
 
     =========================
     EXTRACTION RULES
@@ -460,8 +594,6 @@ def analyze_document_with_ai(filepath, upload_type):
     OUTPUT RULES
     =========================
 
-    Return ONLY valid JSON.
-
     Remove duplicate skills.
 
     Remove duplicate responsibilities.
@@ -473,40 +605,24 @@ def analyze_document_with_ai(filepath, upload_type):
 
     Do not invent required skills.
 
-    Do not include markdown.
-
     Job Description
 
     {upload_document_text}
     """
 
-    try:
-        groq_client = get_groq_client()
-        completion = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {
-                    "role": "user",
-                    "content": cd_prompt if upload_type == "CD" else jd_prompt,
-                }
-            ],
-            response_format={"type": "json_object"},
+    if upload_type == "CD":
+        parsed, error = call_groq_structured(
+            cd_prompt, CandidateExtract, "candidate_extract"
         )
-    except (RuntimeError, ValueError, OSError) as exc:
-        return None, jsonify({"error": "AI analysis failed", "details": str(exc)}), 502
-
-    ai_result_text = completion.choices[0].message.content
-
-    try:
-        ai_result = json.loads(ai_result_text)
-    except json.JSONDecodeError:
-        return (
-            None,
-            jsonify({"error": "AI response was not valid JSON", "raw": ai_result_text}),
-            502,
+    else:
+        parsed, error = call_groq_structured(
+            jd_prompt, JobDescriptionExtract, "job_description_extract"
         )
 
-    return ai_result, None, None
+    if error:
+        return None, jsonify({"error": "AI analysis failed", "details": error}), 502
+
+    return parsed.model_dump(), None, None
 
 
 def save_upload_record(upload_type, filename, ai_result):
@@ -537,10 +653,10 @@ def match_score_with_ai():
     if not cd_data or not jd_data:
         return jsonify({"error": "Missing jd_result or cd_result"}), 400
 
-    match_result_final = get_match_score_with_ai(cd_data, jd_data)
+    match_result_final, error = get_match_score_with_ai(cd_data, jd_data)
 
-    if match_result_final is None:
-        return jsonify({"error": "AI matching failed"}), 502
+    if error:
+        return jsonify({"error": "AI matching failed", "details": error}), 502
 
     return jsonify(match_result_final), 200
 
@@ -548,15 +664,6 @@ def match_score_with_ai():
 def get_match_score_with_ai(cd_data, jd_data):
     prompt = f"""You are an expert technical recruiter performing a SEMANTIC
     comparison — not a keyword or list comparison — between a candidate and a job.
-
-    Respond with ONLY valid JSON (no markdown, no commentary) in this exact shape:
-
-    {{
-    "match_percentage": 0,
-    "match_reasoning": "2-3 sentences explaining the score",
-    "matched_skills": ["string", "string"],
-    "missing_required_skills": ["string", "string"]
-    }}
 
     HOW TO REASON — this is the most important part:
     - Do NOT simply check whether words in "required_skills" appear in "skills".
@@ -583,22 +690,12 @@ def get_match_score_with_ai(cd_data, jd_data):
     Years of experience: {cd_data.get("years_of_experience")}
     """
 
-    try:
-        groq_client = get_groq_client()
-        completion = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"},
-        )
-    except (RuntimeError, ValueError, OSError):
-        return None
+    parsed, error = call_groq_structured(prompt, MatchResult, "match_result")
 
-    try:
-        match_result = json.loads(completion.choices[0].message.content)
-    except json.JSONDecodeError:
-        return None
+    if error:
+        return None, error
 
-    return {**cd_data, **match_result}
+    return {**cd_data, **parsed.model_dump()}, None
 
 
 @app.route("/api/candidate_list", methods=["GET"])
@@ -616,7 +713,6 @@ def candidate_list():
 @app.route("/api/download-uploaded-file/<filename>", methods=["GET"])
 def download_uploaded_file(filename):
     upload_type = request.args.get("uploadType") or request.form.get("uploadType")
-    print(upload_type, "upload_type")
     if not upload_type:
         return jsonify(
             {"error": "Missing uploadType query parameter or form field"}

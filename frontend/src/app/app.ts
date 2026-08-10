@@ -15,7 +15,7 @@ import {
   CdDetailsComponent,
   JdDetailsComponent,
 } from './components';
-import { CandidateData, JobDescriptionData, UploadType } from './models';
+import { CandidateData, CandidateMatchResult, JobDescriptionData, UploadType } from './models';
 import { catchError, concatMap, from, map, of } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { TalentMatchService } from './services';
@@ -127,12 +127,21 @@ export class App implements OnInit {
       return;
     }
 
+    const jdResult = this.uploadedJdResult;
+
+    if (!jdResult) {
+      this.toastr.error('Please upload a job description before matching.');
+
+      return;
+    }
+
     this.isMatching = true;
 
     const toMatch = this.candidates.filter((c) => c.match_percentage == null);
 
     if (toMatch.length === 0) {
       this.toastr.info('All candidates were already matched.');
+      this.isMatching = false;
 
       return;
     }
@@ -144,8 +153,8 @@ export class App implements OnInit {
         concatMap((candidate) => {
           this.updateCandidateState(candidate.filename, { isMatching: true });
 
-          return this.talentMatchService.getMatchScore(candidate, this.uploadedJdResult).pipe(
-            map((matchResult: CandidateData) => ({ candidate, matchResult, error: null })),
+          return this.talentMatchService.getMatchScore(candidate, jdResult).pipe(
+            map((matchResult: CandidateMatchResult) => ({ candidate, matchResult, error: null })),
             catchError((err) => of({ candidate, matchResult: null, error: err })),
           );
         }),
@@ -155,7 +164,6 @@ export class App implements OnInit {
         next: ({ candidate, matchResult, error }) => {
           if (error) {
             hasError = true;
-            this.isMatching = false;
           }
 
           this.updateCandidateState(candidate.filename, {

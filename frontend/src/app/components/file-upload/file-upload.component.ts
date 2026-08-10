@@ -1,5 +1,6 @@
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   DestroyRef,
   EventEmitter,
@@ -40,6 +41,7 @@ export class FileUploadComponent {
     private talentMatchService: TalentMatchService,
     private destroyRef: DestroyRef,
     private toastr: ToastrService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   onFileSelected(event: Event) {
@@ -104,9 +106,17 @@ export class FileUploadComponent {
           this.uploadedFileDetails = response.results;
           this.uploadProcessed.emit({ uploadedResult: response.results });
           this.toastr.success('Document uploaded successfully!');
+          this.cdr.markForCheck();
         },
-        error: () => {
-          this.toastr.error('Failed to upload the document. Please try again.');
+        error: (err) => {
+          const message = err?.error?.details ?? 'Upload failed. Please try again.';
+          this.toastr.error(message);
+
+          if (err?.error?.error === 'Document type mismatch') {
+            this.clearFile();
+          }
+
+          this.cdr.markForCheck();
         },
       });
   }

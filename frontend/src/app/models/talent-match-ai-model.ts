@@ -25,7 +25,23 @@ export interface JobDescriptionData {
   summary?: string;
 }
 
+export interface UploadResumeResponse {
+  filename: string;
+  message: string;
+  uploadType: string;
+  results: CandidateData | JobDescriptionData;
+}
+
 export enum UploadType {
   JD = 'JD',
   CD = 'CD',
 }
+
+export interface MatchResult {
+  match_percentage: number;
+  match_reasoning: string;
+  matched_skills: string[];
+  missing_required_skills: string[];
+}
+
+export type CandidateMatchResult = CandidateData & MatchResult;

@@ -59,7 +59,7 @@ export class CdDetailsComponent {
 
   // Evaluate the currently selected candidate against the uploaded job description.
   evaluateFit(): void {
-    if (!this.candidate) {
+    if (!this.candidate || !this.uploadedJdResult) {
       return;
     }
 
@@ -117,7 +117,6 @@ export class CdDetailsComponent {
           window.URL.revokeObjectURL(url);
         },
         error: (err) => {
-          console.error('Download failed:', err);
           this.toastr.error('Failed to download the resume. Please try again.');
         },
       });
