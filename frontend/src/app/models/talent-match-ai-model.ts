@@ -32,6 +32,13 @@ export interface UploadResumeResponse {
   results: CandidateData | JobDescriptionData;
 }
 
+export interface BulkCandidateUploadResponse {
+  total: number;
+  processed: number;
+  skipped: number;
+  failed: Array<{ filename: string; error: string }>;
+}
+
 export enum UploadType {
   JD = 'JD',
   CD = 'CD',

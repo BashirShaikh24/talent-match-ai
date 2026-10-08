@@ -26,8 +26,10 @@ export class CandidateListComponent {
   @Input() candidates: CandidateData[] = [];
   @Input() isJdUploaded = false;
   @Input() isMatching = false;
+  @Input() isBulkUploading = false;
 
   @Output() getCandidateMatchScores = new EventEmitter<boolean>();
+  @Output() uploadAllCandidates = new EventEmitter<void>();
 
   constructor(
     private talentMatchService: TalentMatchService,
@@ -60,6 +62,10 @@ export class CandidateListComponent {
   // Emit a signal to start the overall candidate evaluation process.
   fetchCandidateMatchScores(): void {
     this.getCandidateMatchScores.emit(true);
+  }
+
+  uploadAllCandidateResumes(): void {
+    this.uploadAllCandidates.emit();
   }
 
   // Download the uploaded candidate resume as a file.

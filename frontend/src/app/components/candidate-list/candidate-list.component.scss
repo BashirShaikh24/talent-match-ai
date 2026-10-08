@@ -249,7 +249,9 @@ app-candidate-list {
 
   &__match-candidate {
     padding: 10px;
-    text-align: right;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
     background-color: var(--surface);
     border-bottom-left-radius: var(--radius-lg);
     border-bottom-right-radius: var(--radius-lg);
@@ -268,6 +270,15 @@ app-candidate-list {
       font-weight: 600;
       cursor: pointer;
       width: 200px;
+
+      &:disabled {
+        cursor: wait;
+        opacity: 0.7;
+      }
+
+      &--upload {
+        background-color: var(--indigo);
+      }
     }
   }
 
@@ -350,11 +361,11 @@ app-candidate-list {
     &__match-candidate {
       height: auto;
       padding: 12px;
-      text-align: left;
     }
 
     &__match-candidate__btn {
-      width: 100%;
+      width: auto;
+      flex: 1;
     }
   }
 }

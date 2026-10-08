@@ -24,6 +24,8 @@
         [candidates]="candidates"
         [isJdUploaded]="!!uploadedJdResult"
         [isMatching]="isMatching"
+        [isBulkUploading]="isBulkUploading"
+        (uploadAllCandidates)="uploadAllCandidates()"
         (getCandidateMatchScores)="fetchCandidateMatchScores($event)"
       ></app-candidate-list>
     </div>

@@ -16,7 +16,7 @@ import {
   JdDetailsComponent,
 } from './components';
 import { CandidateData, CandidateMatchResult, JobDescriptionData, UploadType } from './models';
-import { catchError, concatMap, from, map, of } from 'rxjs';
+import { catchError, concatMap, finalize, from, map, of } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { TalentMatchService } from './services';
 
@@ -40,6 +40,7 @@ export class App implements OnInit {
   uploadTypeEnum = UploadType;
   uploadedJdResult: JobDescriptionData | null = null;
   isMatching: boolean = false;
+  isBulkUploading = false;
 
   constructor(
     public talentMatchService: TalentMatchService,
@@ -119,6 +120,47 @@ export class App implements OnInit {
     } else {
       this.getCandidateList();
     }
+  }
+
+  uploadAllCandidates(): void {
+    if (this.isBulkUploading) {
+      return;
+    }
+
+    this.isBulkUploading = true;
+    this.talentMatchService
+      .uploadAllCandidates()
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.isBulkUploading = false;
+          this.cdr.markForCheck();
+        }),
+      )
+      .subscribe({
+        next: (response) => {
+          this.getCandidateList();
+
+          if (response.failed.length) {
+            this.toastr.warning(
+              `Uploaded ${response.processed} of ${response.total} candidates; ${response.failed.length} failed.`,
+            );
+          } else if (response.total === 0) {
+            this.toastr.info('No candidate PDF files were found in candidate list.');
+          } else if (response.processed === 0) {
+            this.toastr.info('All candidates in candidate list are already uploaded.');
+          } else {
+            this.toastr.success(`Uploaded ${response.processed} candidate(s).`);
+          }
+        },
+        error: (err) => {
+          const message =
+            err?.error?.details ??
+            err?.error?.error ??
+            'Failed to upload candidates. Please try again.';
+          this.toastr.error(message);
+        },
+      });
   }
 
   // Evaluate all candidates that do not yet have a match percentage.

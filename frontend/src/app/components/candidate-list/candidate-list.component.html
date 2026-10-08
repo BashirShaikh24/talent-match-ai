@@ -158,6 +158,14 @@
   </div>
   <div class="candidate-list__match-candidate">
     <button
+      class="candidate-list__match-candidate__btn candidate-list__match-candidate__btn--upload"
+      [disabled]="isBulkUploading"
+      (click)="uploadAllCandidateResumes()"
+    >
+      <i class="fa-solid fa-upload"></i>
+      {{ isBulkUploading ? 'Uploading candidates…' : 'Upload all candidates' }}
+    </button>
+    <button
       class="candidate-list__match-candidate__btn"
       [disabled]="candidates.length == 0 || !isJdUploaded || isMatching"
       (click)="fetchCandidateMatchScores()"

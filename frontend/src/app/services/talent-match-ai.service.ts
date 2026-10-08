@@ -2,6 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
+  BulkCandidateUploadResponse,
   CandidateData,
   CandidateMatchResult,
   JobDescriptionData,
@@ -36,6 +37,13 @@ export class TalentMatchService {
     formData.append('uploadType', uploadType);
 
     return this.http.post<UploadResumeResponse>(`${this.apiUrl}/upload-resume`, formData);
+  }
+
+  uploadAllCandidates(): Observable<BulkCandidateUploadResponse> {
+    return this.http.post<BulkCandidateUploadResponse>(
+      `${this.apiUrl}/upload-all-candidates`,
+      {},
+    );
   }
 
   getCandidateList() {
