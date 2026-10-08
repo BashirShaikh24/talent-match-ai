@@ -98,11 +98,22 @@ export class App implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((data) => {
         const freshCandidates = data as CandidateData[];
+        const existingCandidates = new Map<string, CandidateData>();
+        for (const candidate of this.candidates) {
+          if (candidate.filename) {
+            existingCandidates.set(candidate.filename, candidate);
+          }
+        }
 
         this.candidates = freshCandidates.map((fresh) => ({
           ...fresh,
           isMatching: false,
-          match_percentage: fresh.match_percentage ?? null,
+          match_percentage:
+            fresh.match_percentage ??
+            (fresh.filename
+              ? existingCandidates.get(fresh.filename)?.match_percentage
+              : null) ??
+            null,
         }));
 
         this.cdr.markForCheck();
